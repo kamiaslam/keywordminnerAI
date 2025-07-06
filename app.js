@@ -346,8 +346,10 @@ function displayCompetitorResults(data) {
         card.innerHTML = `
             <div class="flex justify-between items-start mb-3">
                 <div>
-                    <h5 class="text-lg font-semibold text-gray-800">${competitor.domain}</h5>
-                    <p class="text-sm text-gray-600">Traffic: ${(competitor.estimated_traffic / 1000000).toFixed(1)}M/month</p>
+                    <h5 class="text-lg font-semibold text-gray-800">${competitor.name || competitor.domain}</h5>
+                    <p class="text-xs text-gray-500">${competitor.domain}</p>
+                    ${competitor.description ? `<p class="text-xs text-gray-500 mt-1">${competitor.description}</p>` : ''}
+                    <p class="text-sm text-gray-600 mt-2">Traffic: ${(competitor.estimated_traffic / 1000000).toFixed(1)}M/month</p>
                     <p class="text-sm text-gray-600">Domain Authority: ${competitor.domain_authority}</p>
                 </div>
                 <div class="text-right">
