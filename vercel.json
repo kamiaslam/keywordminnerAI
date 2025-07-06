@@ -1,23 +1,13 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/analyze.py",
-      "use": "@vercel/python"
+  "functions": {
+    "api/analyze.py": {
+      "runtime": "python3.9"
     },
-    {
-      "src": "api/analyze-competitors.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "script.js",
-      "use": "@vercel/static"
+    "api/analyze-competitors.py": {
+      "runtime": "python3.9"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/analyze",
@@ -28,12 +18,8 @@
       "dest": "/api/analyze-competitors.py"
     },
     {
-      "src": "/script.js",
-      "dest": "/script.js"
-    },
-    {
-      "src": "/",
-      "dest": "/index.html"
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }

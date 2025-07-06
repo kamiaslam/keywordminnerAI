@@ -10,9 +10,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from api.seo_apis import SEODataProvider
     seo_provider = SEODataProvider()
-except:
-    # Fallback if import fails
-    seo_provider = None
+except ImportError:
+    try:
+        from seo_apis import SEODataProvider
+        seo_provider = SEODataProvider()
+    except ImportError:
+        # Fallback if import fails
+        seo_provider = None
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
