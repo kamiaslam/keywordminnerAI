@@ -195,7 +195,11 @@ function displayResults(data) {
     document.getElementById('avgCPC').textContent = `$${data.avg_cpc}`;
     
     renderKeywordsTable(filteredKeywords);
-    renderChart();
+    
+    // Display long-tail suggestions instead of chart
+    if (data.long_tail_suggestions) {
+        renderLongTailSuggestions(data.long_tail_suggestions);
+    }
     
     document.getElementById('resultsDiv').classList.remove('hidden');
 }
@@ -251,81 +255,43 @@ function filterKeywords(type) {
     event.target.classList.add('bg-blue-600', 'text-white');
 }
 
-function renderChart() {
-    const ctx = document.getElementById('keywordChart').getContext('2d');
+function renderLongTailSuggestions(suggestions) {
+    const suggestionsHTML = `
+        <div class="bg-white rounded-lg shadow-md p-6" id="suggestionsSection">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">💡 Recommended Long-Tail Keywords for New Pages</h3>
+            <p class="text-sm text-gray-600 mb-4">These keywords have lower competition and can help drive organic traffic. Create dedicated pages for each topic:</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                ${suggestions.map((keyword, index) => `
+                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-start">
+                            <span class="text-blue-600 font-bold mr-2">${index + 1}.</span>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">${keyword}</p>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Low Competition
+                                    </span>
+                                    <span class="ml-2 text-gray-500">Ideal for blog post or landing page</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-700">
+                    <strong>💡 Pro Tip:</strong> Create high-quality, informative content for each keyword. 
+                    Focus on answering user questions comprehensively to rank well for these terms.
+                </p>
+            </div>
+        </div>
+    `;
     
-    // Destroy existing chart if it exists
-    if (keywordChart) {
-        keywordChart.destroy();
+    // Replace the chart section with suggestions
+    const chartSection = document.getElementById('chartSection');
+    if (chartSection) {
+        chartSection.innerHTML = suggestionsHTML;
     }
-    
-    const typeCount = {};
-    allKeywords.forEach(k => {
-        typeCount[k.type] = (typeCount[k.type] || 0) + 1;
-    });
-    
-    const labels = Object.keys(typeCount);
-    const data = Object.values(typeCount);
-    
-    // Colors for different keyword types
-    const colors = [
-        'rgba(59, 130, 246, 0.8)',   // Blue for short-tail
-        'rgba(16, 185, 129, 0.8)',   // Green for mid-tail  
-        'rgba(251, 146, 60, 0.8)',   // Orange for long-tail
-        'rgba(147, 51, 234, 0.8)',   // Purple for branded
-        'rgba(239, 68, 68, 0.8)',    // Red for additional types
-        'rgba(245, 158, 11, 0.8)'    // Yellow for additional types
-    ];
-    
-    const borderColors = [
-        'rgba(59, 130, 246, 1)',
-        'rgba(16, 185, 129, 1)',
-        'rgba(251, 146, 60, 1)',
-        'rgba(147, 51, 234, 1)',
-        'rgba(239, 68, 68, 1)',
-        'rgba(245, 158, 11, 1)'
-    ];
-    
-    keywordChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: colors.slice(0, labels.length),
-                borderColor: borderColors.slice(0, labels.length),
-                borderWidth: 2,
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true,
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label;
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ${value} keywords (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
 }
 
 function displayCompetitorResults(data) {
