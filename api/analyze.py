@@ -1,36 +1,9 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List
+from http.server import BaseHTTPRequestHandler
 import json
 import hashlib
 import random
-
-app = FastAPI(title="KeywordMiner AI")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-class AnalyzeRequest(BaseModel):
-    url: str
-    region: Optional[str] = "auto"
-    email: Optional[str] = None
-
-class KeywordResult(BaseModel):
-    keyword: str
-    volume: Optional[int] = None
-    cpc: Optional[float] = None
-    competition: Optional[str] = None
-    competition_score: Optional[float] = None
-    trend: Optional[str] = None
-    type: str
-    intent: str
-    count: Optional[int] = None
+import urllib.parse
+from typing import List
 
 def generate_mock_keywords(url: str, region: str = "us") -> List[dict]:
     """Generate mock keywords for demo purposes"""
@@ -102,35 +75,66 @@ def generate_mock_keywords(url: str, region: str = "us") -> List[dict]:
     
     return keywords[:30]  # Limit to 30 keywords
 
-@app.get("/")
-async def root():
-    return {"message": "KeywordMiner AI Analyze API is running"}
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
 
-@app.post("/")
-async def analyze_website(request: AnalyzeRequest):
-    try:
-        # Generate mock keywords for demo
-        keywords = generate_mock_keywords(request.url, request.region)
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
         
-        # Convert to KeywordResult format
-        results = []
-        for kw in keywords:
-            result = KeywordResult(**kw)
-            results.append(result)
-        
-        # Sort by volume
-        results.sort(key=lambda x: x.volume or 0, reverse=True)
-        
-        return {
-            "url": request.url,
-            "region": request.region,
-            "keywords_found": len(results),
-            "keywords": [r.dict() for r in results],
-            "total_volume": sum(r.volume or 0 for r in results),
-            "avg_cpc": round(sum(r.cpc or 0 for r in results) / len(results), 2) if results else 0
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        response = {"message": "KeywordMiner AI Analyze API is running"}
+        self.wfile.write(json.dumps(response).encode())
 
-# Vercel handler
-handler = app
+    def do_POST(self):
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            url = data.get('url', '')
+            region = data.get('region', 'auto')
+            
+            if not url:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                response = {"error": "URL is required"}
+                self.wfile.write(json.dumps(response).encode())
+                return
+            
+            # Generate mock keywords
+            keywords = generate_mock_keywords(url, region)
+            
+            # Sort by volume
+            keywords.sort(key=lambda x: x.get('volume', 0), reverse=True)
+            
+            response = {
+                "url": url,
+                "region": region,
+                "keywords_found": len(keywords),
+                "keywords": keywords,
+                "total_volume": sum(k.get('volume', 0) for k in keywords),
+                "avg_cpc": round(sum(k.get('cpc', 0) for k in keywords) / len(keywords), 2) if keywords else 0
+            }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            response = {"error": str(e)}
+            self.wfile.write(json.dumps(response).encode())
