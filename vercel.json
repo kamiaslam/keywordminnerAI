@@ -2,6 +2,14 @@
   "version": 2,
   "builds": [
     {
+      "src": "api/analyze.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/analyze-competitors.py",
+      "use": "@vercel/python"
+    },
+    {
       "src": "api/main.py",
       "use": "@vercel/python"
     },
@@ -17,11 +25,11 @@
   "routes": [
     {
       "src": "/api/analyze",
-      "dest": "/api/main.py"
+      "dest": "/api/analyze.py"
     },
     {
       "src": "/api/analyze-competitors",
-      "dest": "/api/main.py"
+      "dest": "/api/analyze-competitors.py"
     },
     {
       "src": "/api/regions",

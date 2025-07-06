@@ -16,9 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Vercel handler
-handler = app
-
 class AnalyzeRequest(BaseModel):
     url: str
     region: Optional[str] = "auto"
@@ -107,9 +104,9 @@ def generate_mock_keywords(url: str, region: str = "us") -> List[dict]:
 
 @app.get("/")
 async def root():
-    return {"message": "KeywordMiner AI API is running"}
+    return {"message": "KeywordMiner AI Analyze API is running"}
 
-@app.post("/analyze")
+@app.post("/")
 async def analyze_website(request: AnalyzeRequest):
     try:
         # Generate mock keywords for demo
@@ -135,57 +132,5 @@ async def analyze_website(request: AnalyzeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/analyze-competitors")
-async def analyze_competitors(request: AnalyzeRequest):
-    try:
-        domain = request.url.replace('https://', '').replace('http://', '').split('/')[0]
-        
-        # Mock competitor data based on domain
-        if 'anthropic' in domain.lower():
-            competitors = [
-                {'domain': 'openai.com', 'estimated_traffic': 180000000, 'domain_authority': 85},
-                {'domain': 'cohere.ai', 'estimated_traffic': 2500000, 'domain_authority': 72},
-                {'domain': 'huggingface.co', 'estimated_traffic': 25000000, 'domain_authority': 78}
-            ]
-        elif 'cnn' in domain.lower():
-            competitors = [
-                {'domain': 'bbc.com', 'estimated_traffic': 1200000000, 'domain_authority': 95},
-                {'domain': 'reuters.com', 'estimated_traffic': 250000000, 'domain_authority': 88},
-                {'domain': 'nytimes.com', 'estimated_traffic': 400000000, 'domain_authority': 92}
-            ]
-        else:
-            competitors = [
-                {'domain': 'example-competitor1.com', 'estimated_traffic': 50000000, 'domain_authority': 75},
-                {'domain': 'example-competitor2.com', 'estimated_traffic': 30000000, 'domain_authority': 70}
-            ]
-        
-        # Add mock keyword data for competitors
-        for comp in competitors:
-            comp['total_keywords'] = random.randint(20, 100)
-            comp['avg_cpc'] = round(random.uniform(1.0, 4.0), 2)
-            comp['total_volume'] = random.randint(100000, 1000000)
-            comp['top_keywords'] = generate_mock_keywords(f"https://{comp['domain']}")[:10]
-        
-        return {
-            "target_url": request.url,
-            "region": request.region,
-            "competitors_found": len(competitors),
-            "competitors": competitors,
-            "keyword_gaps": []  # Simplified for demo
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/regions")
-async def get_supported_regions():
-    return {
-        "regions": [
-            {"code": "us", "name": "United States"},
-            {"code": "uk", "name": "United Kingdom"},
-            {"code": "ae", "name": "United Arab Emirates"},
-            {"code": "au", "name": "Australia"},
-            {"code": "ca", "name": "Canada"},
-            {"code": "in", "name": "India"},
-            {"code": "global", "name": "Global"}
-        ]
-    }
+# Vercel handler
+handler = app
