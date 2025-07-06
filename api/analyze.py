@@ -5,119 +5,187 @@ import random
 import urllib.parse
 from typing import List
 
-def get_intelligent_keywords(domain: str) -> List[str]:
-    """Generate intelligent keywords based on domain analysis"""
+def analyze_domain_keywords(domain: str) -> List[str]:
+    """Extract actual keywords from domain and generate relevant suggestions"""
     domain_lower = domain.lower()
+    domain_parts = domain_lower.replace('.com', '').replace('.org', '').replace('.net', '').replace('.io', '').replace('.ai', '').split('.')
+    
+    # Extract keywords from domain name itself
+    brand_keywords = []
+    for part in domain_parts:
+        if len(part) > 2:  # Ignore very short parts
+            brand_keywords.append(part)
+    
+    # Generate specific keywords for known websites
+    if 'anthropic' in domain_lower:
+        return [
+            # Brand/Direct keywords
+            'anthropic', 'anthropic ai', 'anthropic claude', 'anthropic.com',
+            # Core product keywords
+            'claude ai', 'claude chatbot', 'claude assistant', 'claude api',
+            'constitutional ai', 'ai safety', 'responsible ai',
+            # Service keywords
+            'ai conversation', 'ai writing assistant', 'ai code helper', 'ai research tool',
+            # Long-tail informational
+            'what is anthropic', 'how to use claude', 'claude vs chatgpt', 'anthropic ai safety',
+            'claude ai pricing', 'claude ai capabilities', 'anthropic research papers',
+            # Commercial keywords
+            'claude ai subscription', 'anthropic enterprise', 'claude for business',
+            'ai assistant for teams', 'enterprise ai solutions',
+            # Technical keywords
+            'large language model', 'constitutional ai training', 'ai alignment research',
+            'harmless ai assistant', 'helpful ai chatbot'
+        ]
+    
+    elif 'openai' in domain_lower:
+        return [
+            'openai', 'openai chatgpt', 'openai api', 'openai.com',
+            'chatgpt', 'chatgpt plus', 'chatgpt api', 'gpt-4', 'gpt-3.5',
+            'openai dall-e', 'dall-e 2', 'openai codex', 'openai whisper',
+            'what is openai', 'how to use chatgpt', 'openai pricing', 'chatgpt vs claude',
+            'openai for business', 'chatgpt enterprise', 'openai playground',
+            'ai art generator', 'ai image generator', 'ai writing tool',
+            'conversational ai', 'generative ai', 'artificial intelligence platform'
+        ]
+    
+    elif any(news in domain_lower for news in ['cnn', 'bbc', 'reuters', 'nytimes', 'fox']):
+        news_brand = domain_parts[0] if domain_parts else 'news'
+        return [
+            # Brand keywords
+            news_brand, f'{news_brand} news', f'{news_brand}.com', f'{news_brand} live',
+            # Core content
+            'breaking news', 'world news', 'politics news', 'business news',
+            'technology news', 'sports news', 'entertainment news', 'health news',
+            # Long-tail
+            f'{news_brand} breaking news', f'{news_brand} politics', f'{news_brand} business',
+            f'watch {news_brand} live', f'{news_brand} weather', f'{news_brand} sports',
+            'latest news today', 'news headlines', 'current events',
+            # Local/specific
+            'international news', 'national news', 'local news', 'news analysis',
+            'live news updates', 'news alerts', 'trending news'
+        ]
+    
+    elif any(ecom in domain_lower for ecom in ['amazon', 'ebay', 'shopify', 'etsy']):
+        brand = domain_parts[0] if domain_parts else 'shop'
+        return [
+            # Brand keywords
+            brand, f'{brand}.com', f'{brand} shopping', f'{brand} store',
+            # Core shopping
+            'online shopping', 'buy online', 'free shipping', 'best deals',
+            'product reviews', 'customer reviews', 'price comparison',
+            # Long-tail
+            f'buy from {brand}', f'{brand} deals', f'{brand} coupons', f'{brand} sale',
+            f'{brand} customer service', f'{brand} return policy',
+            'secure checkout', 'order tracking', 'gift cards', 'wishlist',
+            # Categories
+            'electronics', 'clothing', 'home goods', 'books', 'toys'
+        ]
+    
+    elif any(social in domain_lower for social in ['facebook', 'twitter', 'instagram', 'linkedin', 'tiktok']):
+        platform = domain_parts[0] if domain_parts else 'social'
+        return [
+            platform, f'{platform}.com', f'{platform} app', f'{platform} login',
+            f'{platform} profile', f'{platform} page', f'{platform} account',
+            'social media', 'social network', 'connect with friends', 'share photos',
+            f'how to use {platform}', f'{platform} for business', f'{platform} marketing',
+            f'{platform} advertising', f'{platform} analytics', f'{platform} tips',
+            'social media management', 'content creation', 'influencer marketing',
+            'social engagement', 'viral content', 'social media strategy'
+        ]
+    
+    # Generic analysis for any domain
+    else:
+        # Extract meaningful parts from domain
+        domain_keywords = []
+        main_domain = domain_parts[0] if domain_parts else domain_lower.split('.')[0]
+        
+        # Generate keywords based on domain structure
+        domain_keywords.extend([
+            # Brand/Direct
+            main_domain, f'{main_domain}.com', f'{main_domain} website',
+            f'{main_domain} company', f'{main_domain} official site',
+            
+            # Service-based
+            f'{main_domain} services', f'{main_domain} solutions', f'{main_domain} platform',
+            f'{main_domain} app', f'{main_domain} software', f'{main_domain} tool',
+            
+            # Informational
+            f'what is {main_domain}', f'how to use {main_domain}', f'{main_domain} review',
+            f'{main_domain} pricing', f'{main_domain} features', f'{main_domain} demo',
+            
+            # Commercial
+            f'{main_domain} login', f'{main_domain} sign up', f'{main_domain} free trial',
+            f'{main_domain} subscription', f'{main_domain} premium', f'{main_domain} pro',
+            
+            # Support/Help
+            f'{main_domain} support', f'{main_domain} help', f'{main_domain} tutorial',
+            f'{main_domain} guide', f'{main_domain} documentation', f'{main_domain} api'
+        ])
+        
+        return domain_keywords
+
+def get_intelligent_keywords(domain: str) -> List[str]:
+    """Generate comprehensive keyword suggestions including actual site keywords"""
+    
+    # Get domain-specific keywords
+    domain_keywords = analyze_domain_keywords(domain)
+    
+    # Add industry context keywords based on domain analysis
+    domain_lower = domain.lower()
+    industry_keywords = []
     
     # AI/ML Companies
     if any(keyword in domain_lower for keyword in ['anthropic', 'openai', 'ai', 'ml', 'claude']):
-        return [
-            'artificial intelligence', 'machine learning', 'ai assistant', 'chatbot', 'claude ai',
-            'conversational ai', 'language model', 'ai safety', 'natural language processing',
-            'deep learning', 'neural networks', 'ai research', 'generative ai', 'ai tools',
-            'ai platform', 'ai technology', 'machine intelligence', 'automated reasoning'
+        industry_keywords = [
+            'artificial intelligence', 'machine learning', 'deep learning', 'neural networks',
+            'natural language processing', 'computer vision', 'generative ai',
+            'ai ethics', 'machine intelligence', 'automated reasoning', 'ai research'
         ]
     
     # News/Media Companies
     elif any(keyword in domain_lower for keyword in ['cnn', 'bbc', 'news', 'times', 'reuters', 'fox', 'nbc', 'abc']):
-        return [
-            'breaking news', 'world news', 'politics', 'business news', 'technology news',
-            'live news', 'news updates', 'current events', 'news analysis', 'international news',
-            'local news', 'sports news', 'entertainment news', 'weather forecast', 'news today',
-            'headlines', 'news alerts', 'press release', 'journalism', 'news reporter'
+        industry_keywords = [
+            'journalism', 'media coverage', 'news reporting', 'press freedom',
+            'editorial content', 'investigative journalism', 'news anchor',
+            'breaking news alerts', 'live coverage', 'news network'
         ]
     
-    # E-commerce/Shopping
-    elif any(keyword in domain_lower for keyword in ['amazon', 'shop', 'store', 'buy', 'mart', 'commerce', 'ebay']):
-        return [
-            'online shopping', 'buy online', 'e-commerce', 'best deals', 'discount shopping',
-            'free shipping', 'online store', 'product reviews', 'price comparison', 'shopping deals',
-            'customer reviews', 'shopping cart', 'secure checkout', 'return policy', 'gift cards',
-            'sale items', 'new arrivals', 'trending products', 'product catalog', 'order tracking'
-        ]
-    
-    # Social Media/Tech
-    elif any(keyword in domain_lower for keyword in ['facebook', 'twitter', 'instagram', 'social', 'meta', 'tiktok']):
-        return [
-            'social media', 'social network', 'connect with friends', 'share photos', 'social platform',
-            'user engagement', 'social sharing', 'community building', 'social marketing', 'influencer',
-            'social media management', 'content creation', 'viral content', 'social media strategy',
-            'digital marketing', 'brand awareness', 'social analytics', 'user generated content'
-        ]
-    
-    # Streaming/Entertainment
-    elif any(keyword in domain_lower for keyword in ['netflix', 'youtube', 'stream', 'video', 'music', 'spotify']):
-        return [
-            'streaming', 'watch online', 'video streaming', 'movies online', 'tv shows',
-            'entertainment', 'binge watch', 'original series', 'documentaries', 'streaming service',
-            'video content', 'premium content', 'live streaming', 'on-demand', 'digital media',
-            'content library', 'streaming platform', 'video quality', 'mobile streaming'
-        ]
-    
-    # Financial/Banking
-    elif any(keyword in domain_lower for keyword in ['bank', 'finance', 'pay', 'credit', 'invest', 'money']):
-        return [
-            'online banking', 'mobile banking', 'financial services', 'credit cards', 'personal loans',
-            'investment', 'savings account', 'checking account', 'mortgage', 'financial planning',
-            'wealth management', 'retirement planning', 'insurance', 'credit score', 'banking fees',
-            'secure banking', 'financial advisor', 'money management', 'loan calculator'
-        ]
-    
-    # Education/Learning
-    elif any(keyword in domain_lower for keyword in ['edu', 'university', 'school', 'learn', 'course', 'academy']):
-        return [
-            'online courses', 'education', 'learning platform', 'skill development', 'certification',
-            'degree programs', 'distance learning', 'e-learning', 'professional development',
-            'academic courses', 'training programs', 'educational resources', 'study materials',
-            'online university', 'continuing education', 'career advancement', 'learning management'
-        ]
-    
-    # Travel/Booking
-    elif any(keyword in domain_lower for keyword in ['travel', 'hotel', 'booking', 'flight', 'trip', 'airbnb']):
-        return [
-            'travel booking', 'hotel reservation', 'flight booking', 'vacation packages', 'travel deals',
-            'accommodation', 'trip planning', 'travel guide', 'destination', 'travel insurance',
-            'car rental', 'business travel', 'family vacation', 'weekend getaway', 'travel reviews',
-            'booking confirmation', 'travel itinerary', 'last minute deals', 'travel tips'
-        ]
-    
-    # Health/Medical
-    elif any(keyword in domain_lower for keyword in ['health', 'medical', 'doctor', 'medicine', 'pharma', 'clinic']):
-        return [
-            'health information', 'medical advice', 'symptoms checker', 'health tips', 'wellness',
-            'medical conditions', 'treatment options', 'healthcare', 'preventive care', 'nutrition',
-            'fitness', 'mental health', 'medical research', 'health insurance', 'telemedicine',
-            'prescription drugs', 'medical specialties', 'health screening', 'medical records'
-        ]
-    
-    # Food/Restaurant
-    elif any(keyword in domain_lower for keyword in ['food', 'restaurant', 'recipe', 'cook', 'eat', 'delivery']):
-        return [
-            'food delivery', 'restaurant menu', 'recipes', 'cooking tips', 'food ordering',
-            'meal planning', 'nutrition facts', 'restaurant reviews', 'takeout', 'catering',
-            'food safety', 'cooking techniques', 'ingredients', 'dietary restrictions', 'food blog',
-            'restaurant finder', 'food photography', 'culinary arts', 'food trends'
+    # E-commerce
+    elif any(keyword in domain_lower for keyword in ['shop', 'store', 'buy', 'commerce', 'market']):
+        industry_keywords = [
+            'e-commerce platform', 'online marketplace', 'digital commerce',
+            'retail technology', 'shopping experience', 'payment processing',
+            'inventory management', 'customer service', 'logistics', 'fulfillment'
         ]
     
     # Technology/Software
     elif any(keyword in domain_lower for keyword in ['tech', 'software', 'app', 'digital', 'cloud', 'data']):
-        return [
-            'technology solutions', 'software development', 'mobile app', 'cloud computing', 'data analytics',
-            'cybersecurity', 'digital transformation', 'automation', 'innovation', 'tech support',
-            'software tools', 'programming', 'web development', 'database management', 'IT services',
-            'technology consulting', 'enterprise software', 'tech trends', 'digital innovation'
+        industry_keywords = [
+            'software development', 'cloud computing', 'data analytics', 'cybersecurity',
+            'digital transformation', 'enterprise software', 'saas platform',
+            'api integration', 'tech innovation', 'automation tools'
         ]
     
-    # Generic business keywords
+    # Default industry keywords for unknown domains
     else:
-        # Generate industry-neutral business keywords
-        return [
-            'business solutions', 'professional services', 'customer support', 'contact us',
-            'about company', 'our services', 'business consulting', 'industry expertise',
-            'client testimonials', 'case studies', 'portfolio', 'company profile',
-            'business strategy', 'market analysis', 'competitive advantage', 'quality assurance',
-            'customer satisfaction', 'business growth', 'innovative solutions', 'service excellence'
+        industry_keywords = [
+            'business solutions', 'professional services', 'digital services',
+            'customer experience', 'industry expertise', 'innovation',
+            'technology solutions', 'service excellence', 'market leader'
         ]
+    
+    # Combine domain-specific and industry keywords
+    all_keywords = domain_keywords + industry_keywords
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_keywords = []
+    for keyword in all_keywords:
+        if keyword not in seen:
+            seen.add(keyword)
+            unique_keywords.append(keyword)
+    
+    return unique_keywords
 
 def generate_mock_keywords(url: str, region: str = "us") -> List[dict]:
     """Generate intelligent keywords based on domain analysis"""
