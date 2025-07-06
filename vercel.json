@@ -11,6 +11,10 @@
       "dest": "/api/simple_analyze.py"
     },
     {
+      "src": "/api/enhanced-analyze",
+      "dest": "/api/enhanced_analyze.py"
+    },
+    {
       "src": "/api/analyze-competitors", 
       "dest": "/api/simple_competitors.py"
     },
