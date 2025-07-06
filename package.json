@@ -1,0 +1,27 @@
+{
+  "name": "keywordminer-ai",
+  "version": "1.0.0",
+  "description": "AI-powered SEO keyword analysis and competitor research tool",
+  "main": "frontend/index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 3001 --directory frontend",
+    "build": "echo 'Build complete'",
+    "start": "python3 -m http.server 8080 --directory frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kamiaslam/keywordminnerAI.git"
+  },
+  "keywords": [
+    "seo",
+    "keywords",
+    "ai",
+    "competitor-analysis",
+    "web-scraping",
+    "nlp"
+  ],
+  "author": "Kami Aslam",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
