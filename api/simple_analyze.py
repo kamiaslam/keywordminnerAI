@@ -3,6 +3,17 @@ import json
 import random
 from datetime import datetime, timedelta
 from typing import List, Dict
+import sys
+import os
+
+# Add current directory to path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    from longtail_generator import ProgrammaticLongTailGenerator
+    longtail_generator = ProgrammaticLongTailGenerator()
+except ImportError:
+    longtail_generator = None
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -50,8 +61,15 @@ class handler(BaseHTTPRequestHandler):
             total_volume = sum(k.get('volume', 0) for k in keywords)
             avg_cpc = round(sum(k.get('cpc', 0) for k in keywords) / len(keywords), 2) if keywords else 0
             
-            # Generate content suggestions
-            long_tail_suggestions = self.generate_content_suggestions(domain_name)
+            # Generate programmatic long-tail keywords
+            if longtail_generator:
+                industry = self.detect_industry(domain_name)
+                long_tail_suggestions = longtail_generator.generate_longtail_keywords(domain, industry, 30)
+                # Convert to simple format for frontend
+                long_tail_simple = [kw['keyword'] for kw in long_tail_suggestions[:10]]
+            else:
+                long_tail_simple = self.generate_content_suggestions(domain_name)
+                long_tail_suggestions = []
             
             # Get trend overview for main domain keyword
             main_trend_data = self.generate_trend_data()
@@ -65,12 +83,14 @@ class handler(BaseHTTPRequestHandler):
                 "keywords": keywords,
                 "total_volume": total_volume,
                 "avg_cpc": avg_cpc,
-                "long_tail_suggestions": long_tail_suggestions,
+                "long_tail_suggestions": long_tail_simple,
+                "programmatic_longtail": long_tail_suggestions,
                 "trend_overview": main_trend_data,
                 "top_regions": top_regions,
-                "data_source": "Google Trends API + Keyword Planner Style Data",
-                "extraction_method": "Real SEO Analytics + Trend Analysis",
-                "seasonal_insights": seasonal_insights
+                "data_source": "Programmatic SEO + Strategic Keyword Intelligence",
+                "extraction_method": "AI-Powered Keyword Generation + Market Analysis",
+                "seasonal_insights": seasonal_insights,
+                "keyword_opportunities": self.analyze_keyword_opportunities(long_tail_suggestions)
             }
             
             self.send_response(200)
@@ -250,5 +270,80 @@ class handler(BaseHTTPRequestHandler):
                 "Focus on rising keyword opportunities",
                 "Monitor seasonal patterns for content planning", 
                 "Target informational keywords for awareness"
+            ]
+        }
+    
+    def detect_industry(self, domain_name: str) -> str:
+        """Detect industry based on domain name"""
+        domain_lower = domain_name.lower()
+        
+        # AI/ML companies
+        if any(keyword in domain_lower for keyword in ['ai', 'ml', 'neural', 'bot', 'gpt', 'claude', 'openai', 'anthropic']):
+            return 'ai'
+        # SaaS keywords
+        elif any(keyword in domain_lower for keyword in ['app', 'soft', 'platform', 'tool', 'service', 'cloud', 'api']):
+            return 'saas'
+        # E-commerce keywords
+        elif any(keyword in domain_lower for keyword in ['shop', 'store', 'buy', 'sell', 'commerce', 'market', 'retail']):
+            return 'ecommerce'
+        # Finance keywords
+        elif any(keyword in domain_lower for keyword in ['pay', 'bank', 'finance', 'money', 'invest', 'loan', 'credit']):
+            return 'finance'
+        # Media keywords
+        elif any(keyword in domain_lower for keyword in ['media', 'news', 'blog', 'video', 'stream', 'content']):
+            return 'media'
+        # Tech keywords
+        elif any(keyword in domain_lower for keyword in ['tech', 'dev', 'code', 'git', 'data', 'analytics']):
+            return 'tech'
+        else:
+            return 'saas'  # Default to SaaS
+    
+    def analyze_keyword_opportunities(self, longtail_keywords: List[Dict]) -> Dict:
+        """Analyze keyword opportunities for strategic insights"""
+        if not longtail_keywords:
+            return {"message": "No programmatic keywords generated"}
+        
+        # Analyze by intent
+        intent_analysis = {}
+        for keyword in longtail_keywords:
+            intent = keyword.get('intent', 'unknown')
+            if intent not in intent_analysis:
+                intent_analysis[intent] = {'count': 0, 'total_volume': 0, 'avg_cpc': 0}
+            intent_analysis[intent]['count'] += 1
+            intent_analysis[intent]['total_volume'] += keyword.get('volume', 0)
+            intent_analysis[intent]['avg_cpc'] += keyword.get('cpc', 0)
+        
+        # Calculate averages
+        for intent in intent_analysis:
+            count = intent_analysis[intent]['count']
+            if count > 0:
+                intent_analysis[intent]['avg_cpc'] = round(intent_analysis[intent]['avg_cpc'] / count, 2)
+        
+        # Find best opportunities
+        high_volume_keywords = [k for k in longtail_keywords if k.get('volume', 0) > 1000]
+        low_competition_keywords = [k for k in longtail_keywords if k.get('competition') == 'Low']
+        commercial_keywords = [k for k in longtail_keywords if k.get('commercial_value') == 'High']
+        
+        return {
+            "total_longtail_keywords": len(longtail_keywords),
+            "intent_breakdown": intent_analysis,
+            "high_volume_opportunities": len(high_volume_keywords),
+            "low_competition_opportunities": len(low_competition_keywords),
+            "high_commercial_value": len(commercial_keywords),
+            "top_opportunities": [
+                {
+                    "keyword": kw['keyword'],
+                    "volume": kw.get('volume', 0),
+                    "commercial_value": kw.get('commercial_value', 'Unknown'),
+                    "content_opportunity": kw.get('content_opportunity', 'Blog content')
+                }
+                for kw in sorted(longtail_keywords, 
+                               key=lambda x: x.get('volume', 0), reverse=True)[:5]
+            ],
+            "strategic_recommendations": [
+                "Focus on high-volume, low-competition keywords first",
+                "Create content clusters around commercial intent keywords",
+                "Develop comprehensive guides for informational keywords",
+                "Monitor and track keyword performance monthly"
             ]
         }
