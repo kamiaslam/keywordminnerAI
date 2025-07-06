@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "keywordminer-ai",
   "routes": [
     {
       "src": "/api/hello",
