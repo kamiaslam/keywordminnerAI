@@ -14,11 +14,11 @@
       "use": "@vercel/python"
     },
     {
-      "src": "index.html",
+      "src": "public/index.html",
       "use": "@vercel/static"
     },
     {
-      "src": "app.js",
+      "src": "public/script.js",
       "use": "@vercel/static"
     }
   ],
@@ -40,12 +40,12 @@
       "dest": "/api/main.py"
     },
     {
-      "src": "/app.js",
-      "dest": "/app.js"
+      "src": "/script.js",
+      "dest": "/public/script.js"
     },
     {
       "src": "/",
-      "dest": "/index.html"
+      "dest": "/public/index.html"
     }
   ]
 }
