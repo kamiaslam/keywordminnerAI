@@ -2,16 +2,16 @@
   "version": 2,
   "routes": [
     {
+      "src": "/api/hello",
+      "dest": "/api/hello.py"
+    },
+    {
       "src": "/api/analyze",
       "dest": "/api/simple_analyze.py"
     },
     {
       "src": "/api/analyze-competitors", 
       "dest": "/api/simple_competitors.py"
-    },
-    {
-      "src": "/api/test",
-      "dest": "/api/test.py"
     },
     {
       "src": "/",
