@@ -3,20 +3,26 @@ import json
 import sys
 import os
 import random
+from typing import List, Dict
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from api.seo_apis import SEODataProvider
+    from api.google_trends_api import GoogleTrendsAPI
     seo_provider = SEODataProvider()
+    trends_api = GoogleTrendsAPI()
 except ImportError:
     try:
         from seo_apis import SEODataProvider
+        from google_trends_api import GoogleTrendsAPI
         seo_provider = SEODataProvider()
+        trends_api = GoogleTrendsAPI()
     except ImportError:
         # Fallback if import fails
         seo_provider = None
+        trends_api = None
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -53,7 +59,7 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(response).encode())
                 return
             
-            if not seo_provider:
+            if not seo_provider or not trends_api:
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')

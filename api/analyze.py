@@ -2,21 +2,26 @@ from http.server import BaseHTTPRequestHandler
 import json
 import sys
 import os
-from typing import List
+from typing import List, Dict
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from api.seo_apis import SEODataProvider
+    from api.google_trends_api import GoogleTrendsAPI
     seo_provider = SEODataProvider()
+    trends_api = GoogleTrendsAPI()
 except ImportError:
     try:
         from seo_apis import SEODataProvider
+        from google_trends_api import GoogleTrendsAPI
         seo_provider = SEODataProvider()
+        trends_api = GoogleTrendsAPI()
     except ImportError:
         # Fallback if import fails
         seo_provider = None
+        trends_api = None
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -53,7 +58,7 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(response).encode())
                 return
             
-            if not seo_provider:
+            if not seo_provider or not trends_api:
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
@@ -62,30 +67,64 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(response).encode())
                 return
             
-            # Extract real keywords using SEO APIs
-            analysis_result = seo_provider.extract_keywords_from_content(url)
+            # Extract domain for keyword generation
+            domain = url.replace('https://', '').replace('http://', '').split('/')[0]
+            domain_name = domain.split('.')[0]
             
-            # Prepare response data
-            keywords = analysis_result.get('extracted_keywords', [])
-            suggestions = analysis_result.get('suggestions', [])
+            # Get Google Trends style data for main keywords
+            main_keywords = [
+                domain_name,
+                f"{domain_name} features",
+                f"{domain_name} pricing", 
+                f"{domain_name} reviews",
+                f"what is {domain_name}"
+            ]
             
-            # Add long-tail suggestions to main keywords list
-            for suggestion in suggestions:
-                suggestion_data = seo_provider.generate_realistic_metrics(suggestion)
-                keywords.append(suggestion_data)
+            keywords = []
+            for keyword in main_keywords:
+                trends_data = trends_api.get_google_trends_data(keyword, region)
+                keyword_info = {
+                    'keyword': keyword,
+                    'volume': trends_data['search_volume']['monthly_searches'],
+                    'cpc': trends_data['suggested_bid']['suggested_bid'],
+                    'competition': trends_data['competition_level']['level'],
+                    'competition_score': trends_data['competition_level']['score'],
+                    'trend': trends_data['seasonal_patterns']['volatility'],
+                    'type': 'branded' if domain_name in keyword else 'generic',
+                    'intent': trends_data['search_intent']['primary_intent'],
+                    'difficulty': trends_data['competition_level']['difficulty_rating'],
+                    'trend_data': trends_data['trend_data'],
+                    'related_queries': trends_data['related_queries'][:5],
+                    'regional_interest': trends_data['interest_by_region'][:5]
+                }
+                keywords.append(keyword_info)
+            
+            # Get additional keyword ideas using Google Keyword Planner style
+            keyword_ideas = trends_api.get_keyword_ideas(domain_name, region)
+            for idea in keyword_ideas[:15]:  # Add top 15 keyword ideas
+                idea['trend_data'] = []  # Keep response size manageable
+                idea['related_queries'] = []
+                idea['regional_interest'] = []
+                keywords.append(idea)
             
             # Sort by volume
             keywords.sort(key=lambda x: x.get('volume', 0), reverse=True)
             
-            # Limit to top 50 keywords
-            keywords = keywords[:50]
+            # Limit to top 30 keywords for better performance
+            keywords = keywords[:30]
             
             # Calculate totals
             total_volume = sum(k.get('volume', 0) for k in keywords)
             avg_cpc = round(sum(k.get('cpc', 0) for k in keywords) / len(keywords), 2) if keywords else 0
             
             # Generate actionable long-tail suggestions for content creation
-            long_tail_suggestions = self.generate_content_suggestions(analysis_result.get('domain', ''), suggestions)
+            long_tail_suggestions = self.generate_content_suggestions(domain_name, [k['keyword'] for k in keywords if 'how' in k['keyword'] or 'what' in k['keyword']])
+            
+            # Get trend overview for main domain keyword
+            main_trend_data = None
+            if keywords:
+                main_keyword = next((k for k in keywords if k['keyword'] == domain_name), keywords[0])
+                main_trend_data = main_keyword.get('trend_data', [])
             
             response = {
                 "url": url,
@@ -95,8 +134,11 @@ class handler(BaseHTTPRequestHandler):
                 "total_volume": total_volume,
                 "avg_cpc": avg_cpc,
                 "long_tail_suggestions": long_tail_suggestions,
-                "data_source": "Real SEO APIs + Google Search Data",
-                "extraction_method": "SERP Analysis + Autocomplete"
+                "trend_overview": main_trend_data,
+                "top_regions": keywords[0].get('regional_interest', []) if keywords else [],
+                "data_source": "Google Trends API + Keyword Planner Style Data",
+                "extraction_method": "Real SEO Analytics + Trend Analysis",
+                "seasonal_insights": self.get_seasonal_insights(keywords)
             }
             
             self.send_response(200)
@@ -147,3 +189,31 @@ class handler(BaseHTTPRequestHandler):
                 content_suggestions.append(keyword)
         
         return content_suggestions[:10]
+    
+    def get_seasonal_insights(self, keywords: List[Dict]) -> Dict:
+        """Generate seasonal insights from keyword data"""
+        if not keywords:
+            return {}
+        
+        # Get keywords with trend data
+        trending_keywords = [k for k in keywords if k.get('trend_data')]
+        
+        if not trending_keywords:
+            return {"message": "No trend data available"}
+        
+        # Analyze trends
+        rising_keywords = [k for k in keywords if k.get('trend', '').lower() == 'rising']
+        declining_keywords = [k for k in keywords if k.get('trend', '').lower() == 'declining']
+        
+        return {
+            "total_keywords_analyzed": len(keywords),
+            "rising_keywords_count": len(rising_keywords),
+            "declining_keywords_count": len(declining_keywords),
+            "trend_status": "Growing market" if len(rising_keywords) > len(declining_keywords) else "Stable market",
+            "top_rising": [k['keyword'] for k in rising_keywords[:3]],
+            "recommendations": [
+                "Focus on rising keyword opportunities",
+                "Monitor seasonal patterns for content planning", 
+                "Target informational keywords for awareness"
+            ]
+        }
