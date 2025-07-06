@@ -2,23 +2,11 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/analyze.py",
+      "src": "api/*.py",
       "use": "@vercel/python"
     },
     {
-      "src": "api/analyze-competitors.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/main.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "public/index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "public/script.js",
+      "src": "public/**/*",
       "use": "@vercel/static"
     }
   ],
@@ -32,20 +20,8 @@
       "dest": "/api/analyze-competitors.py"
     },
     {
-      "src": "/api/regions",
-      "dest": "/api/main.py"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/main.py"
-    },
-    {
-      "src": "/script.js",
-      "dest": "/public/script.js"
-    },
-    {
-      "src": "/",
-      "dest": "/public/index.html"
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
   ]
 }
