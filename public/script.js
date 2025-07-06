@@ -1,4 +1,4 @@
-const API_URL = '/api';
+const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api';
 let allKeywords = [];
 let filteredKeywords = [];
 let keywordChart = null;
@@ -122,25 +122,9 @@ async function analyzeKeywords() {
         
     } catch (error) {
         console.error('Error:', error);
-        alert(`Error analyzing website: ${error.message}. Using demo data instead.`);
-        
-        // Show demo data if API fails
-        const demoData = {
-            url: normalizedUrl,
-            region: regionInput.value,
-            keywords_found: 15,
-            total_volume: 125000,
-            avg_cpc: 2.35,
-            keywords: [
-                {keyword: 'artificial intelligence', volume: 45000, cpc: 3.20, competition: 'High', type: 'short-tail', intent: 'informational', trend: 'Rising'},
-                {keyword: 'machine learning', volume: 38000, cpc: 2.80, competition: 'High', type: 'short-tail', intent: 'informational', trend: 'Stable'},
-                {keyword: 'ai assistant', volume: 22000, cpc: 2.10, competition: 'Medium', type: 'mid-tail', intent: 'commercial', trend: 'Rising'},
-                {keyword: 'language model', volume: 15000, cpc: 1.95, competition: 'Medium', type: 'mid-tail', intent: 'informational', trend: 'Rising'},
-                {keyword: 'chatbot', volume: 5000, cpc: 1.50, competition: 'Low', type: 'short-tail', intent: 'commercial', trend: 'Stable'}
-            ]
-        };
-        displayResults(demoData);
-        
+        console.error('Response status:', error.status);
+        console.error('Response text:', error.message);
+        alert(`Error analyzing website: ${error.message}. Please check the URL and try again.`);
     } finally {
         document.getElementById('loadingDiv').classList.add('hidden');
         document.getElementById('analyzeBtn').disabled = false;
@@ -193,20 +177,9 @@ async function analyzeCompetitors() {
         
     } catch (error) {
         console.error('Error:', error);
-        alert(`Error analyzing competitors: ${error.message}. Using demo data instead.`);
-        
-        // Show demo data if API fails
-        const demoData = {
-            competitors_found: 3,
-            keyword_gaps: [],
-            competitors: [
-                {domain: 'openai.com', estimated_traffic: 180000000, domain_authority: 85, total_keywords: 450, avg_cpc: 3.20, total_volume: 2500000, top_keywords: [{keyword: 'chatgpt'}, {keyword: 'gpt-4'}, {keyword: 'openai'}]},
-                {domain: 'cohere.ai', estimated_traffic: 2500000, domain_authority: 72, total_keywords: 120, avg_cpc: 2.80, total_volume: 150000, top_keywords: [{keyword: 'cohere'}, {keyword: 'nlp api'}, {keyword: 'language ai'}]},
-                {domain: 'huggingface.co', estimated_traffic: 25000000, domain_authority: 78, total_keywords: 380, avg_cpc: 1.95, total_volume: 800000, top_keywords: [{keyword: 'transformers'}, {keyword: 'hugging face'}, {keyword: 'ai models'}]}
-            ]
-        };
-        displayCompetitorResults(demoData);
-        
+        console.error('Response status:', error.status);
+        console.error('Response text:', error.message);
+        alert(`Error analyzing competitors: ${error.message}. Please check the URL and try again.`);
     } finally {
         document.getElementById('loadingDiv').classList.add('hidden');
         document.getElementById('competitorBtn').disabled = false;
@@ -222,7 +195,11 @@ function displayResults(data) {
     document.getElementById('avgCPC').textContent = `$${data.avg_cpc}`;
     
     renderKeywordsTable(filteredKeywords);
-    renderChart();
+    
+    // Display long-tail suggestions instead of chart
+    if (data.long_tail_suggestions) {
+        renderLongTailSuggestions(data.long_tail_suggestions);
+    }
     
     document.getElementById('resultsDiv').classList.remove('hidden');
 }
@@ -278,81 +255,43 @@ function filterKeywords(type) {
     event.target.classList.add('bg-blue-600', 'text-white');
 }
 
-function renderChart() {
-    const ctx = document.getElementById('keywordChart').getContext('2d');
+function renderLongTailSuggestions(suggestions) {
+    const suggestionsHTML = `
+        <div class="bg-white rounded-lg shadow-md p-6" id="suggestionsSection">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">💡 Recommended Long-Tail Keywords for New Pages</h3>
+            <p class="text-sm text-gray-600 mb-4">These keywords have lower competition and can help drive organic traffic. Create dedicated pages for each topic:</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                ${suggestions.map((keyword, index) => `
+                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-start">
+                            <span class="text-blue-600 font-bold mr-2">${index + 1}.</span>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">${keyword}</p>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Low Competition
+                                    </span>
+                                    <span class="ml-2 text-gray-500">Ideal for blog post or landing page</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-700">
+                    <strong>💡 Pro Tip:</strong> Create high-quality, informative content for each keyword. 
+                    Focus on answering user questions comprehensively to rank well for these terms.
+                </p>
+            </div>
+        </div>
+    `;
     
-    // Destroy existing chart if it exists
-    if (keywordChart) {
-        keywordChart.destroy();
+    // Replace the chart section with suggestions
+    const chartSection = document.getElementById('chartSection');
+    if (chartSection) {
+        chartSection.innerHTML = suggestionsHTML;
     }
-    
-    const typeCount = {};
-    allKeywords.forEach(k => {
-        typeCount[k.type] = (typeCount[k.type] || 0) + 1;
-    });
-    
-    const labels = Object.keys(typeCount);
-    const data = Object.values(typeCount);
-    
-    // Colors for different keyword types
-    const colors = [
-        'rgba(59, 130, 246, 0.8)',   // Blue for short-tail
-        'rgba(16, 185, 129, 0.8)',   // Green for mid-tail  
-        'rgba(251, 146, 60, 0.8)',   // Orange for long-tail
-        'rgba(147, 51, 234, 0.8)',   // Purple for branded
-        'rgba(239, 68, 68, 0.8)',    // Red for additional types
-        'rgba(245, 158, 11, 0.8)'    // Yellow for additional types
-    ];
-    
-    const borderColors = [
-        'rgba(59, 130, 246, 1)',
-        'rgba(16, 185, 129, 1)',
-        'rgba(251, 146, 60, 1)',
-        'rgba(147, 51, 234, 1)',
-        'rgba(239, 68, 68, 1)',
-        'rgba(245, 158, 11, 1)'
-    ];
-    
-    keywordChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: colors.slice(0, labels.length),
-                borderColor: borderColors.slice(0, labels.length),
-                borderWidth: 2,
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true,
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label;
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ${value} keywords (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
 }
 
 function displayCompetitorResults(data) {
@@ -373,8 +312,10 @@ function displayCompetitorResults(data) {
         card.innerHTML = `
             <div class="flex justify-between items-start mb-3">
                 <div>
-                    <h5 class="text-lg font-semibold text-gray-800">${competitor.domain}</h5>
-                    <p class="text-sm text-gray-600">Traffic: ${(competitor.estimated_traffic / 1000000).toFixed(1)}M/month</p>
+                    <h5 class="text-lg font-semibold text-gray-800">${competitor.name || competitor.domain}</h5>
+                    <p class="text-xs text-gray-500">${competitor.domain}</p>
+                    ${competitor.description ? `<p class="text-xs text-gray-500 mt-1">${competitor.description}</p>` : ''}
+                    <p class="text-sm text-gray-600 mt-2">Traffic: ${(competitor.estimated_traffic / 1000000).toFixed(1)}M/month</p>
                     <p class="text-sm text-gray-600">Domain Authority: ${competitor.domain_authority}</p>
                 </div>
                 <div class="text-right">
@@ -394,6 +335,27 @@ function displayCompetitorResults(data) {
         `;
         
         competitorList.appendChild(card);
+    });
+    
+    // Render keyword gaps table
+    const tbody = document.getElementById('keywordGapsTableBody');
+    tbody.innerHTML = '';
+    
+    data.keyword_gaps.forEach(gap => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td class="px-4 py-2 text-sm font-medium text-gray-900">${gap.keyword}</td>
+            <td class="px-4 py-2 text-sm text-gray-600">${gap.volume.toLocaleString()}</td>
+            <td class="px-4 py-2 text-sm text-gray-600">$${gap.cpc}</td>
+            <td class="px-4 py-2 text-sm">
+                <span class="px-2 py-1 text-xs rounded-full ${gap.competition === 'High' ? 'bg-red-100 text-red-800' : 
+                    gap.competition === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                    ${gap.competition}
+                </span>
+            </td>
+            <td class="px-4 py-2 text-sm text-gray-600">${gap.competitor_domain}</td>
+            <td class="px-4 py-2 text-sm font-semibold text-purple-600">${gap.opportunity_score}/10</td>
+        `;
     });
     
     document.getElementById('competitorResultsDiv').classList.remove('hidden');
