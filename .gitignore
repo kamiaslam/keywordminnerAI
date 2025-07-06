@@ -51,3 +51,4 @@ Thumbs.db
 # Static files for production
 static/results.csv
 static/report.pdf
+.vercel

@@ -18,7 +18,15 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git remote add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "WebFetch(domain:keywordminnerai.vercel.app)",
+      "Bash(cp:*)",
+      "Bash(npm install:*)",
+      "Bash(vercel:*)",
+      "WebFetch(domain:keywordminer-c61ykegvh-mindmetas-projects.vercel.app)",
+      "WebFetch(domain:keywordminer-mab5ipn1l-mindmetas-projects.vercel.app)",
+      "WebFetch(domain:keywordminer-ai-mindmetas-projects.vercel.app)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }
