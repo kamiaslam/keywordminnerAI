@@ -1,3 +1,4 @@
+from http.server import BaseHTTPRequestHandler
 import requests
 import json
 import random
@@ -572,3 +573,66 @@ class RealCompetitorIntelligence:
             'Stripe': 'Developer-friendly payment APIs'
         }
         return advantages.get(company_name, f'Strong presence in {industry} market')
+
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        
+        response = {"message": "Real Competitor Intelligence API", "status": "working"}
+        self.wfile.write(json.dumps(response).encode())
+
+    def do_POST(self):
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            url = data.get('url', '')
+            
+            if not url:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                response = {"error": "URL is required"}
+                self.wfile.write(json.dumps(response).encode())
+                return
+            
+            # Extract domain
+            domain = url.replace('https://', '').replace('http://', '').split('/')[0]
+            
+            # Use the RealCompetitorIntelligence class
+            intel = RealCompetitorIntelligence()
+            competitors = intel.analyze_competitors(domain)
+            
+            response = {
+                "target_url": url,
+                "competitors_found": len(competitors),
+                "competitors": competitors[:5],  # Limit to top 5
+                "data_source": "Real Competitor Intelligence Database",
+                "analysis_method": "Industry-Specific Competitor Analysis"
+            }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+            
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            response = {"error": f"Competitor analysis failed: {str(e)}"}
+            self.wfile.write(json.dumps(response).encode())
