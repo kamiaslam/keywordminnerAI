@@ -11,11 +11,20 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from longtail_generator import ProgrammaticLongTailGenerator
-    from website_content_analyzer import WebsiteContentAnalyzer
     longtail_generator = ProgrammaticLongTailGenerator()
-    content_analyzer = WebsiteContentAnalyzer()
-except ImportError:
+except ImportError as e:
+    print(f"Longtail generator import failed: {e}")
     longtail_generator = None
+
+try:
+    from website_content_analyzer import WebsiteContentAnalyzer
+    content_analyzer = WebsiteContentAnalyzer()
+    print("✅ Website content analyzer loaded successfully")
+except ImportError as e:
+    print(f"❌ Website content analyzer import failed: {e}")
+    content_analyzer = None
+except Exception as e:
+    print(f"❌ Website content analyzer initialization failed: {e}")
     content_analyzer = None
 
 class handler(BaseHTTPRequestHandler):
@@ -118,7 +127,9 @@ class handler(BaseHTTPRequestHandler):
                     "description": website_description,
                     "detected_industry": industry,
                     "locations_found": locations,
-                    "content_analysis_method": "Real Website Content Analysis" if content_analyzer else "Domain-Based Analysis"
+                    "content_analysis_method": "Real Website Content Analysis" if content_analyzer else "Domain-Based Analysis",
+                    "content_analyzer_available": content_analyzer is not None,
+                    "longtail_generator_available": longtail_generator is not None
                 },
                 "data_source": "Real Website Content Analysis + Strategic Keyword Intelligence",
                 "extraction_method": "Website Content Scraping + Industry-Specific Keyword Matching",
