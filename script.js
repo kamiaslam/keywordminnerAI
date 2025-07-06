@@ -196,8 +196,10 @@ function displayResults(data) {
     
     renderKeywordsTable(filteredKeywords);
     
-    // Display long-tail suggestions instead of chart
-    if (data.long_tail_suggestions) {
+    // Display Google Trends style data
+    if (data.trend_overview && data.trend_overview.length > 0) {
+        renderTrendsOverview(data.trend_overview, data.top_regions, data.seasonal_insights);
+    } else if (data.long_tail_suggestions) {
         renderLongTailSuggestions(data.long_tail_suggestions);
     }
     
@@ -213,26 +215,39 @@ function renderKeywordsTable(keywords) {
         const competitionColor = keyword.competition === 'High' ? 'red' : 
                                 keyword.competition === 'Medium' ? 'yellow' : 'green';
         
+        // Add difficulty score if available
+        const difficultyDisplay = keyword.difficulty ? 
+            `<small class="text-xs text-gray-400 block">Difficulty: ${keyword.difficulty}</small>` : '';
+        
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${keyword.keyword}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">${keyword.volume ? keyword.volume.toLocaleString() : '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                ${keyword.keyword}
+                ${difficultyDisplay}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">
+                ${keyword.volume ? keyword.volume.toLocaleString() : '-'}
+                ${keyword.trend_data && keyword.trend_data.length > 0 ? 
+                    `<small class="block text-xs text-blue-600">📈 Trending</small>` : ''}
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">$${keyword.cpc || '0.00'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${competitionColor}-100 text-${competitionColor}-800">
                     ${keyword.competition || '-'}
                 </span>
+                ${keyword.competition_score ? 
+                    `<small class="block text-xs text-gray-400">${keyword.competition_score}</small>` : ''}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    ${keyword.type}
+                    ${keyword.type || 'generic'}
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                    ${keyword.intent}
+                    ${keyword.intent || 'informational'}
                 </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${keyword.trend || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${keyword.trend || 'Stable'}</td>
         `;
     });
 }
@@ -253,6 +268,99 @@ function filterKeywords(type) {
     
     event.target.classList.remove('bg-gray-200', 'text-gray-700');
     event.target.classList.add('bg-blue-600', 'text-white');
+}
+
+function renderTrendsOverview(trendData, topRegions, seasonalInsights) {
+    const trendsHTML = `
+        <div class="bg-white rounded-lg shadow-md p-6" id="trendsSection">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">📈 Google Trends Style Analytics</h3>
+            
+            <!-- Trend Chart Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-700 mb-3">12-Month Interest Trend</h4>
+                    <div class="space-y-2">
+                        ${trendData.slice(-6).map(point => `
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">${point.date}</span>
+                                <div class="flex items-center">
+                                    <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: ${point.interest}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">${point.interest}%</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-700 mb-3">🌍 Interest by Region</h4>
+                    <div class="space-y-2">
+                        ${topRegions.slice(0, 5).map((region, index) => `
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">${index + 1}. ${region.region}</span>
+                                <div class="flex items-center">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-green-600 h-2 rounded-full" style="width: ${region.interest}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">${region.interest}%</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seasonal Insights -->
+            ${seasonalInsights && seasonalInsights.trend_status ? `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-blue-800 mb-2">🔍 Market Analysis</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="text-blue-600 font-medium">Market Status:</span>
+                            <p class="text-gray-700">${seasonalInsights.trend_status}</p>
+                        </div>
+                        <div>
+                            <span class="text-blue-600 font-medium">Rising Keywords:</span>
+                            <p class="text-gray-700">${seasonalInsights.rising_keywords_count} trending up</p>
+                        </div>
+                        <div>
+                            <span class="text-blue-600 font-medium">Keywords Analyzed:</span>
+                            <p class="text-gray-700">${seasonalInsights.total_keywords_analyzed} total</p>
+                        </div>
+                    </div>
+                    ${seasonalInsights.top_rising && seasonalInsights.top_rising.length > 0 ? `
+                        <div class="mt-3">
+                            <span class="text-blue-600 font-medium text-sm">🚀 Top Rising:</span>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                ${seasonalInsights.top_rising.map(keyword => 
+                                    `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">${keyword}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+
+            <!-- Pro Tips -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-semibold text-gray-700 mb-2">💡 Google Trends Insights</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• Focus on keywords with consistent interest patterns</li>
+                    <li>• Target regions showing high interest for better ROI</li>
+                    <li>• Monitor seasonal trends for content planning</li>
+                    <li>• Rising keywords indicate growing opportunities</li>
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    // Replace the chart section with trends overview
+    const chartSection = document.getElementById('chartSection');
+    if (chartSection) {
+        chartSection.innerHTML = trendsHTML;
+    }
 }
 
 function renderLongTailSuggestions(suggestions) {
