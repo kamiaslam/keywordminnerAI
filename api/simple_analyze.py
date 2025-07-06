@@ -11,9 +11,12 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from longtail_generator import ProgrammaticLongTailGenerator
+    from website_content_analyzer import WebsiteContentAnalyzer
     longtail_generator = ProgrammaticLongTailGenerator()
+    content_analyzer = WebsiteContentAnalyzer()
 except ImportError:
     longtail_generator = None
+    content_analyzer = None
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -54,8 +57,32 @@ class handler(BaseHTTPRequestHandler):
             domain = url.replace('https://', '').replace('http://', '').split('/')[0]
             domain_name = domain.split('.')[0]
             
-            # Generate Google Trends style keywords
-            keywords = self.generate_keywords_with_trends(domain_name, region)
+            # Use real website content analysis
+            if content_analyzer:
+                print(f"Analyzing website content for: {url}")
+                content_analysis = content_analyzer.analyze_website_content(url)
+                
+                # Extract real keywords from website content
+                keywords = content_analysis.get('keywords', [])
+                industry = content_analysis.get('industry', 'general')
+                website_title = content_analysis.get('title', '')
+                website_description = content_analysis.get('meta_description', '')
+                locations = content_analysis.get('locations', [])
+                
+                print(f"Found {len(keywords)} keywords, industry: {industry}, locations: {locations}")
+                
+                # If we didn't get enough keywords from content, supplement with generated ones
+                if len(keywords) < 15:
+                    fallback_keywords = self.generate_keywords_with_trends(domain_name, region)
+                    keywords.extend(fallback_keywords[:15-len(keywords)])
+                
+            else:
+                # Fallback to generic keyword generation
+                keywords = self.generate_keywords_with_trends(domain_name, region)
+                industry = self.detect_industry(domain_name)
+                website_title = domain_name.replace('-', ' ').title()
+                website_description = f"Website analysis for {domain}"
+                locations = []
             
             # Calculate totals
             total_volume = sum(k.get('volume', 0) for k in keywords)
@@ -63,7 +90,6 @@ class handler(BaseHTTPRequestHandler):
             
             # Generate programmatic long-tail keywords
             if longtail_generator:
-                industry = self.detect_industry(domain_name)
                 long_tail_suggestions = longtail_generator.generate_longtail_keywords(domain, industry, 30)
                 # Convert to simple format for frontend
                 long_tail_simple = [kw['keyword'] for kw in long_tail_suggestions[:10]]
@@ -87,8 +113,15 @@ class handler(BaseHTTPRequestHandler):
                 "programmatic_longtail": long_tail_suggestions,
                 "trend_overview": main_trend_data,
                 "top_regions": top_regions,
-                "data_source": "Programmatic SEO + Strategic Keyword Intelligence",
-                "extraction_method": "AI-Powered Keyword Generation + Market Analysis",
+                "website_analysis": {
+                    "title": website_title,
+                    "description": website_description,
+                    "detected_industry": industry,
+                    "locations_found": locations,
+                    "content_analysis_method": "Real Website Content Analysis" if content_analyzer else "Domain-Based Analysis"
+                },
+                "data_source": "Real Website Content Analysis + Strategic Keyword Intelligence",
+                "extraction_method": "Website Content Scraping + Industry-Specific Keyword Matching",
                 "seasonal_insights": seasonal_insights,
                 "keyword_opportunities": self.analyze_keyword_opportunities(long_tail_suggestions)
             }
