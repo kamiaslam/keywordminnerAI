@@ -25,7 +25,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         
-        response = {"message": "Enhanced KeywordMiner AI - Real Website Content Analysis API"}
+        response = {"message": "Enhanced KeywordMiner AI v2.1 - Real Healthcare Keywords", "timestamp": datetime.now().isoformat()}
         self.wfile.write(json.dumps(response).encode())
 
     def do_POST(self):
