@@ -8,7 +8,11 @@
     },
     {
       "src": "/api/analyze",
-      "dest": "/api/simple_analyze.py"
+      "dest": "/api/analyze.py"
+    },
+    {
+      "src": "/api/healthcare-keywords",
+      "dest": "/api/healthcare_keywords.py"
     },
     {
       "src": "/api/enhanced-analyze",
