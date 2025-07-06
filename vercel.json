@@ -16,8 +16,20 @@
   ],
   "routes": [
     {
+      "src": "/api/analyze",
+      "dest": "/api/main.py"
+    },
+    {
+      "src": "/api/analyze-competitors",
+      "dest": "/api/main.py"
+    },
+    {
+      "src": "/api/regions",
+      "dest": "/api/main.py"
+    },
+    {
       "src": "/api/(.*)",
-      "dest": "api/main.py"
+      "dest": "/api/main.py"
     },
     {
       "src": "/app.js",
